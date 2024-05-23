@@ -3,25 +3,27 @@
 .intro_right_container {
   width: 100%;
   position: sticky;
-  top: calc(134px);
+  top: 140px;
   background-color: rgb(255, 255, 255);
   box-shadow: rgba(108, 118, 128, 0.16) 0px 4px 8px;
   border: 3px solid rgb(162, 238, 148);
   border-radius: $border-radius-3;
+  overflow: hidden;
   .reservation_content {
     position: relative;
   }
-  .modal_close_btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    font-size: 24px;
+}
 
-    &:hover {
-      color: $gray;
-    }
+.modal_close_btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+
+  &:hover {
+    color: $gray;
   }
 }
 
@@ -33,6 +35,13 @@
   padding: 20px;
   color: $black;
 }
+
+.trainer_right_img {
+  width: 100%;
+  height: 350px;
+  object-fit: cover;
+}
+
 .trainer_name_star {
   display: flex;
   justify-content: space-between;
@@ -58,8 +67,9 @@
 }
 
 .center_name,
-.trainer_intro_oneline {
+.trainer_short_intro {
   padding: 5px 0;
+  color: $black;
 }
 
 .center_name {
@@ -67,29 +77,13 @@
   font: $font-weight-2;
 }
 .middle_wrap {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .certificate .left,
-.specialized_field .left,
-.bottom_wrap > h3 {
+.specialized_field .left {
   font-weight: $font-weight-2;
   color: $green2;
-}
-
-.trainer_class_price_info {
-  display: flex;
-  gap: 15px;
-  font-weight: $font-weight-2;
-}
-
-.class_discountrate {
-  color: $red;
-}
-
-.class_price {
-  color: $gray;
-  text-decoration: line-through;
 }
 
 .reservation_btn {
@@ -136,33 +130,6 @@
   border: none;
 }
 
-// 모달창 회색배경
-.reservation_container {
-  z-index: 1000;
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-}
 
-.reservation_content {
-  background-color: $white;
-  width: 500px;
-  height: 800px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
 
-.button_wrapper {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding-top: 100px;
-}
+

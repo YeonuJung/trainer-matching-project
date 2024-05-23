@@ -24,4 +24,44 @@ router.get("/centerall", (req, res) => {
   });
 });
 
+router.post("/countStar", (req, res) => {
+  selectCenter.selectCountReview(req.body.user_id, (err, result) => {
+    if (err) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+router.post("/price", (req, res) => {
+  selectCenter.selectPrice(req.body.user_id, (err, result) => {
+    if (err) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+router.post("/currentlocation", (req, res) => {
+  selectCenter.selectCurrentLocation(req.body, (err, result) => {
+    if (err) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
+router.post("/user", (req, res) => {
+  selectCenter.selectUser(req.body.user_id, (err, result) => {
+    if (err) {
+      res.status(500).send("Internal Server Error");
+    } else {
+      res.status(200).send(result);
+    }
+  });
+});
+
 module.exports = router;

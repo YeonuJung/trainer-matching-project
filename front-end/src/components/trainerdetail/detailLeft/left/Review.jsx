@@ -3,21 +3,48 @@ import "./Review.scss";
 import { LuPencilLine } from "react-icons/lu";
 import { FaStar } from "react-icons/fa";
 import { AiOutlineClose } from "react-icons/ai";
-import { GoStar } from "react-icons/go";
+import { useLocation } from "react-router-dom";
+import { CgProfile } from "react-icons/cg";
+import { RiDeleteBin5Line } from "react-icons/ri";
+import { FaPencilAlt } from "react-icons/fa";
+import Swal from "sweetalert2/dist/sweetalert2.js";
+import "sweetalert2/src/sweetalert2.scss";
 
-const Review = () => {
+const Review = ({ sectionRefs }) => {
   const [reviewList, setReviewList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const fileInputRef = useRef(null);
   const [reviewContent, setReviewContent] = useState("");
   const [selectedRating, setSelectedRating] = useState(0);
   const [sessionUserId, setSessionUserId] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const url = useLocation();
+  const [expandedImageIndex, setExpandedImageIndex] = useState(null);
+  const reviewIndex = useRef(0);
+
+  const receivedId = url.pathname.split("/")[2];
 
   const handleStarClick = (rating) => {
     setSelectedRating(rating);
   };
-
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top",
+    showConfirmButton: false,
+    iconColor: "white",
+    customClass: {
+      popup: "colored-toast",
+    },
+    timer: 1500,
+    timerProgressBar: true,
+    didOpen: (toast) => {
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
+    },
+  });
   function handleReview() {
     setIsModalOpen(true);
   }
@@ -27,14 +54,35 @@ const Review = () => {
     setPreviewImages([]);
     setReviewContent("");
     setSelectedRating(0);
+    setSelectedFiles([]);
+    setExpandedImageIndex(null);
+    setIsEditModalOpen(false);
+    setSelectedReview(null);
+  }
+
+  function handleEdit(reviewId) {
+    const selectedReview = reviewList.find(
+      (review) => review.review_id === reviewId
+    );
+    setSelectedReview(selectedReview);
+    setIsEditModalOpen(true);
+  }
+
+  function handleCloseEditModal() {
+    setIsEditModalOpen(false);
   }
 
   const handleFileChange = (e) => {
-    const files = e.target.files;
-    if (files.length + previewImages.length > 3) {
-      alert("최대 3개의 사진까지만 등록할 수 있습니다.");
+    const files = Array.from(e.target.files);
+    if (files.length + selectedFiles.length > 3) {
+      Toast.fire({
+        icon: "info",
+        title: "최대 3개의 사진까지 업로드 가능합니다.",
+      });
       return;
     }
+
+    setSelectedFiles([...selectedFiles, ...files]);
 
     for (let file of files) {
       const reader = new FileReader();
@@ -47,46 +95,122 @@ const Review = () => {
 
   const handleRemoveImage = (index) => {
     const newPreviewImages = [...previewImages];
+    const newSelectedFiles = [...selectedFiles];
     newPreviewImages.splice(index, 1);
+    newSelectedFiles.splice(index, 1);
     setPreviewImages(newPreviewImages);
+    setSelectedFiles(newSelectedFiles);
   };
 
   const handleReviewContentChange = (e) => {
     setReviewContent(e.target.value);
   };
 
+  const handleFileUpload = async () => {
+    try {
+      const filesInfo = selectedFiles.map((file) => ({
+        name: file.name,
+        type: file.type,
+      }));
+
+      const response = await fetch(
+        "http://localhost:5000/file/generate-signed-urls",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            files: filesInfo,
+            userId: receivedId,
+            table: "review",
+          }),
+        }
+      );
+
+      const { signedUrls } = await response.json();
+
+      await Promise.all(
+        signedUrls.map(async ({ name, url }) => {
+          const file = selectedFiles.find((f) => f.name === name);
+          const result = await fetch(url, {
+            method: "PUT",
+            headers: {
+              "Content-Type": file.type,
+            },
+            body: file,
+          });
+          if (result.ok) {
+            console.log(`${name} uploaded successfully.`);
+          } else {
+            console.error(`Failed to upload ${name}.`);
+          }
+        })
+      );
+    } catch (error) {
+      console.error("Error uploading files:", error);
+    }
+  };
+
   const handleFetchReview = async () => {
     if (selectedRating === 0) {
-      alert("별점을 선택해주세요.");
+      Toast.fire({
+        icon: "info",
+        title: "별점을 선택해주세요.",
+      });
+      return;
+    }
+
+    if (!sessionUserId) {
+      Toast.fire({
+        icon: "info",
+        title: "회원 로그인이 필요합니다.",
+      });
+      handleCloseModal();
+
       return;
     }
 
     try {
+      await handleFileUpload();
+
+      const formData = new FormData();
+      const fileImgArr = [];
+      selectedFiles.forEach((file) => {
+        fileImgArr.push(file.name);
+      });
+
+      formData.append("review_img", fileImgArr.join(","));
+      formData.append("user_id", sessionUserId);
+      formData.append("point", selectedRating);
+      formData.append("review", reviewContent);
+      formData.append("received_id", receivedId);
+
+      console.log(formData.get("user_id"));
+
       const response = await fetch("http://localhost:5000/review", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: sessionUserId,
-          point: selectedRating,
-          review: reviewContent,
-          review_img: previewImages,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
       if (response.ok && data.message === "SUCCESS") {
-        alert("리뷰가 등록되었습니다.");
+        Toast.fire({
+          icon: "success",
+          title: "후기가 등록되었습니다.",
+        });
         handleCloseModal();
+        window.location.reload();
       } else {
-        throw new Error(data.message || "리뷰 등록에 실패했습니다.");
+        throw new Error(data.message || "후기 등록에 실패했습니다.");
       }
     } catch (error) {
-      alert(error.message);
+      Swal.fire(error.message);
     }
   };
 
   useEffect(() => {
-    fetch("http://localhost:5000/review", {
+    fetch(`http://localhost:5000/review/${receivedId}`, {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -103,7 +227,6 @@ const Review = () => {
       });
   }, []);
 
-  // 평균 점수 계산 함수
   const calculateAveragePoint = () => {
     if (reviewList.length === 0) {
       return 0;
@@ -116,9 +239,94 @@ const Review = () => {
     return totalPoint / reviewList.length;
   };
 
+  function handleDelete(reviewId) {
+    Swal.fire({
+      title: "정말로 삭제하시겠습니까?",
+      showDenyButton: true,
+      confirmButtonText: "네",
+      denyButtonText: `아니오`,
+      confirmButtonColor: "#a2ee94",
+      denyButtonColor: "#ff0000",
+      focusConfirm: false,
+      allowOutsideClick: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`http://localhost:5000/review/${reviewId}/delete`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: sessionUserId,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.message === "SUCCESS") {
+              Toast.fire({
+                icon: "success",
+                title: "삭제되었습니다.",
+              });
+              window.location.reload();
+            } else {
+              Toast.fire({
+                icon: "info",
+                title: "취소되었습니다.",
+              });
+            }
+          });
+      }
+    });
+  }
+
+  function handleUpdateReview() {
+    if (!selectedReview) {
+      Toast.fire({
+        icon: "info",
+        title: "수정할 후기를 선택해주세요",
+      });
+      return;
+    }
+
+    fetch(`http://localhost:5000/review/${selectedReview.review_id}/update`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: sessionUserId,
+        point: selectedReview.point,
+        review: selectedReview.review,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.message === "SUCCESS") {
+          Toast.fire({
+            icon: "success",
+            title: "후기 수정에 성공하였습니다",
+          });
+          window.location.reload();
+        } else {
+          Toast.fire({
+            icon: "info",
+            title: "수정할 후기를 선택해주세요",
+          });
+        }
+      });
+  }
+
   return (
     <div className="review" id="intro_page_contents_wrap">
-      <h1>후기</h1>
+      <h1
+        className="centerInfo_h1_title"
+        id="header_section11"
+        ref={sectionRefs.current.header_section11}
+      >
+        후기
+      </h1>
       <div id="wrap_container">
         <div className="review_wrap">
           {reviewList.length > 0 ? (
@@ -142,12 +350,22 @@ const Review = () => {
               <div className="review_btn">
                 <button onClick={handleReview}>
                   <LuPencilLine />
-                  <a className="create_review">리뷰 남기기</a>
+                  <a className="create_review">후기 남기기</a>
                 </button>
               </div>
             </>
           ) : (
-            <div>등록된 리뷰가 없습니다.</div>
+            <div className="flexBox" style={{ flex: 1 }}>
+              <div>
+                <h4>후기를 작성해주세요.</h4>
+              </div>
+              <div className="review_btn">
+                <button onClick={handleReview}>
+                  <LuPencilLine />
+                  <a className="create_review">후기 남기기</a>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -164,12 +382,27 @@ const Review = () => {
                     <div>
                       <div className="review_header">
                         <div>
+                          <CgProfile size={24} />
                           <span className="review_userName">
                             {review.user_name}
                           </span>
                           <span className="reviewDate">
                             {review.register_date?.slice(0, 10) || ""}
                           </span>
+                          {sessionUserId === review.user_id ? (
+                            <>
+                              <RiDeleteBin5Line
+                                onClick={() => handleDelete(review.review_id)}
+                                className="deleteReview"
+                                size={24}
+                              />
+                              <FaPencilAlt
+                                onClick={() => handleEdit(review.review_id)}
+                                className="editReview"
+                                size={24}
+                              />
+                            </>
+                          ) : null}
                         </div>
                         <div className="reviewStar">
                           <div className="star_wrap">
@@ -183,7 +416,29 @@ const Review = () => {
                       </div>
                       <div className="review_context">
                         <div className="review_context_photo">
-                          {review.review_img}
+                          {review.review_img
+                            ? review.review_img
+                                .split(",")
+                                .map((img, imgindex) => (
+                                  <div key={imgindex} className="reviewImage">
+                                    <div className="review_div">
+                                      <div
+                                        className="img_review"
+                                        onClick={() => {
+                                          setExpandedImageIndex(imgindex);
+                                          reviewIndex.current = index;
+                                        }}
+                                      >
+                                        <img
+                                          className="img img_review"
+                                          src={`${process.env.REACT_APP_FILE_SERVER_URL}/review/${receivedId}/${img}`}
+                                          alt={`Review ${index}`}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                            : null}
                         </div>
                         <div className="review_context_text">
                           <p>{review.review}</p>
@@ -193,7 +448,10 @@ const Review = () => {
                   </li>
                 ))
               ) : (
-                <li>등록된 리뷰가 없습니다.</li>
+                <li style={{ textAlign: "center", margin: 10, padding: 10 }}>
+                  {" "}
+                  <h3>등록된 후기가 없습니다.</h3>
+                </li>
               )}
             </ul>
             <div className="reviewAll_btn">
@@ -273,17 +531,8 @@ const Review = () => {
                         <label className="reviewTitle">
                           증빙사진을 올려주세요 (최대 3개)
                         </label>
-                        <div className="flexBox">
-                          <input type="checkbox" name="" id="check_photo" />
-                          <label htmlFor="check_photo"></label>
-                          <label
-                            htmlFor="check_photo"
-                            className="reviewPhotoAuth"
-                          >
-                            사진 공개
-                          </label>
-                        </div>
                       </div>
+
                       <div className="preview-images-container">
                         {previewImages.map((image, index) => (
                           <div key={index} className="preview-image">
@@ -346,7 +595,7 @@ const Review = () => {
                         }`}
                         disabled={reviewContent.length === 0}
                       >
-                        <span>리뷰 작성 완료</span>
+                        <span>후기 작성 완료</span>
                       </button>
                     </div>
                   </div>
@@ -357,6 +606,131 @@ const Review = () => {
         </div>
       )}
       {isModalOpen && <div className="modal-backdrop show fade"></div>}
+
+      {isEditModalOpen && (
+        <div
+          className="modal show fade"
+          onClick={handleCloseEditModal}
+          tabIndex={-1}
+          role="dialog"
+        >
+          <div
+            className="modal-dialog modal-dialog-scrollable"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-content">
+              <div className="modal-body">
+                <div className="modal-component">
+                  <h5 className="headerTitle">
+                    후기 수정하기
+                    <div className="exitButton" onClick={handleCloseEditModal}>
+                      X
+                    </div>
+                  </h5>
+                  <div style={{ marginTop: "12px" }}>
+                    <div className="flexBox reviewWrap">
+                      <div className="ReviewEditModal">
+                        <label className="reviewTitle">
+                          별점을 선택해주세요
+                        </label>
+                        <div className="star-rating">
+                          {[...Array(5)].map((_, index) => (
+                            <FaStar
+                              key={index}
+                              size={36}
+                              className="gostar"
+                              onClick={() =>
+                                setSelectedReview({
+                                  ...selectedReview,
+                                  point: index + 1,
+                                })
+                              }
+                              style={{
+                                color:
+                                  index < selectedReview.point
+                                    ? "rgb(255,187,51)"
+                                    : "darkgray",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ margin: "24px 0px" }}>
+                      <div
+                        className="reviewWrap"
+                        style={{
+                          paddingBottom: "8px",
+                        }}
+                      >
+                        <label className="reviewTitle">
+                          내용을 작성해주세요.
+                          <div
+                            style={{
+                              float: "right",
+                              fontSize: "14px",
+                              color: "rgb(108,118,128)",
+                            }}
+                          >
+                            {selectedReview.review.length}/400
+                          </div>
+                        </label>
+                      </div>
+                      <textarea
+                        id="review_content"
+                        name="content"
+                        maxLength={400}
+                        placeholder="내용을 입력해주세요"
+                        rows="6"
+                        value={selectedReview.review}
+                        onChange={(e) =>
+                          setSelectedReview({
+                            ...selectedReview,
+                            review: e.target.value,
+                          })
+                        }
+                      ></textarea>
+                    </div>
+                    <div className="button_Div">
+                      <button
+                        onClick={handleUpdateReview}
+                        className="button_Basic active"
+                      >
+                        <span>후기 수정 완료</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isEditModalOpen && <div className="modal-backdrop show fade"></div>}
+
+      {/* 이미지 확대 모달 */}
+      {expandedImageIndex !== null && reviewList.length > 0 && (
+        <div
+          className="expendedModal"
+          onClick={() => setExpandedImageIndex(null)}
+        >
+          <div
+            className="expendedModal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={`${`${
+                process.env.REACT_APP_FILE_SERVER_URL
+              }/review/${receivedId}/${
+                reviewList[reviewIndex.current].review_img?.split(",")[
+                  expandedImageIndex
+                ] || ""
+              }`}`}
+              alt="Expanded"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

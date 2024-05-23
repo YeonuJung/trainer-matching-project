@@ -1,6 +1,7 @@
 @import "../../common.scss";
 
 .TrainerListItem {
+  padding: 12px;
   margin-bottom: 17px;
   width: 491px;
   height: 198px;
@@ -12,29 +13,29 @@
 }
 
 .morae {
+  font-family: Inter;
   left: 178px;
-  top: 24px;
+  top: 25px;
   position: absolute;
   color: black;
-  font-size: 16px;
-  font-weight: 600;
-
+  font-size: 21px;
+  font-weight: 900;
+  color: $green2;
   word-wrap: break-word;
 }
 
 .moraeTitle {
   width: 283px;
-  height: 57px;
+  height: 10px;
   left: 178px;
-  top: 54px;
+  top: 60px;
   position: absolute;
 }
 
 .moraeTitleText {
   font-size: 18px;
   font-weight: 600;
-
-  word-wrap: break-word;
+  color: $green2;
 }
 
 .moraeTitleTextPT {
@@ -49,16 +50,15 @@
 }
 
 .moraeLocation {
-  font-weight: 600;
+  font-weight: 400;
   font-family: Inter;
   height: 19px;
   left: 178px;
-  top: 150px;
+  top: 140px;
   position: absolute;
   color: rgb(108, 118, 128);
-  font-size: 15px;
-  margin-top: 5px;
-  word-wrap: break-word;
+  font-size: 14px;
+  margin: 5px;
 }
 .moraeReview {
   height: 23px;
@@ -77,4 +77,38 @@
   left: 0;
   top: 0;
   position: absolute;
+}
+
+.mappin {
+  color: $green2;
+}
+.streetIcon {
+  color: $green2;
+}
+
+.item_trainer_short_intro {
+  color: $black;
+  font-size: 14px;
+  position: absolute;
+  top: 5px;
+  left: 6px;
+}
+
+.moraeTotalPrice {
+  position: absolute;
+  top: 50px;
+  left: 6px;
+}
+.center_name {
+  font-size: 16px;
+  font-weight: 600;
+  color: $green2;
+}
+.wonIcon {
+  color: rgb(246, 120, 120);
+}
+.avgReview {
+}
+.chatIcon {
+  color: $green2;
 }

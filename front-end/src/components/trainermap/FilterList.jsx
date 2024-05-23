@@ -3,7 +3,14 @@ import "./FilterList.scss";
 import { RiArrowGoBackLine } from "react-icons/ri";
 
 const FilterList = (props) => {
-  const { currentLatitude, currentLongitude, setTrainers } = props;
+  const {
+    currentLatitude,
+    currentLongitude,
+    setTrainers,
+    setFilter,
+    setIsloading,
+    trainers,
+  } = props;
 
   const [value, setValue] = useState(500);
   const [priceValue, setPriceValue] = useState(4);
@@ -16,12 +23,13 @@ const FilterList = (props) => {
     meter: 500,
     price: 4,
     comfort: [],
-    gender: "all",
+    gender: "m",
     sort: "defaultSort",
     latitude: currentLatitude,
     longitude: currentLongitude,
   });
 
+  console.log(filterData);
   const handleChange = (event) => {
     setValue(Number(event.target.value));
     setFilterData((prevFilterData) => ({
@@ -57,7 +65,7 @@ const FilterList = (props) => {
       meter: 500,
       price: 4,
       comfort: [],
-      gender: "all",
+      gender: "m",
       sort: "defaultSort",
       latitude: currentLatitude,
       longitude: currentLongitude,
@@ -65,8 +73,6 @@ const FilterList = (props) => {
   };
 
   const handleFilter = () => {
-    console.log("Applying filters:", filterData);
-    // 여기에 필터 적용 로직을 추가하세요.
     fetch("http://localhost:5000/filter", {
       method: "POST",
       headers: {
@@ -76,8 +82,9 @@ const FilterList = (props) => {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        setFilter(true);
         setTrainers(data);
+        props.setFilter(true);
       });
   };
 
@@ -102,7 +109,7 @@ const FilterList = (props) => {
         </div>
       </div>
       <hr />
-      <div className="filterSort">
+      {/* <div className="filterSort">
         <div className="SORT">정렬</div>
         <div className="sort">
           <div className="defaultSort">
@@ -142,7 +149,7 @@ const FilterList = (props) => {
             </label>
           </div>
         </div>
-      </div>
+      </div> */}
       <div className="searchRound">
         <div className="searchRoundTitle">
           <div>검색반경</div>
@@ -188,7 +195,7 @@ const FilterList = (props) => {
       <div className="genderBox">
         <div className="GENDER">성별</div>
         <div className="genderCheck">
-          <label>
+          {/* <label>
             <input
               type="radio"
               name="gender"
@@ -196,7 +203,7 @@ const FilterList = (props) => {
               onChange={() => setFilterData({ ...filterData, gender: "all" })}
             />
             전체
-          </label>
+          </label> */}
           <label>
             <input
               type="radio"
@@ -212,12 +219,13 @@ const FilterList = (props) => {
               name="gender"
               checked={filterData.gender === "m"}
               onChange={() => setFilterData({ ...filterData, gender: "m" })}
+              defaultChecked
             />
             남성
           </label>
         </div>
       </div>
-      <div className="comfort">
+      {/* <div className="comfort">
         <div>이용편의</div>
         <div className="comfortBox">
           {comfort.map((comfort, index) => (
@@ -226,7 +234,7 @@ const FilterList = (props) => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
       <div className="btn_area">
         <button id="filterBtn" onClick={handleFilter}>
           필터 적용하기

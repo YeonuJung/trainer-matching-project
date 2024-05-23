@@ -2,6 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "./Footer.scss";
 const Footer = () => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
   return (
     <footer>
       <div>
@@ -16,32 +19,36 @@ const Footer = () => {
             <div className="menu_section">
               <ul className="menu_list">
                 <li>
-                  <Link to="#" className="documentation">
+                  <Link to="/privacyPolicy" className="documentation">
                     개인정보 처리방침
                   </Link>
                 </li>
                 <span />
                 <li>
-                  <Link to="#" className="documentation">
+                  <Link to="/termsOfUse" className="documentation">
                     이용약관
                   </Link>
                 </li>
                 <span />
                 <li>
-                  <Link to="#" className="notice_page">
+                  <Link to="/announcement" className="notice_page">
                     공지사항
                   </Link>
                 </li>
                 <span />
                 <li>
-                  <Link to="#" className="FAQ_page">
+                  <Link to="/faq" className="FAQ_page">
                     자주 묻는 질문
                   </Link>
                 </li>
                 <span />
                 <li>
-                  <Link to="#" className="inquiry_page">
-                    1:1 문의하기
+                  <Link
+                    to="/servicecenter"
+                    className="inquiry_page"
+                    onClick={scrollToTop}
+                  >
+                    문의하기
                   </Link>
                 </li>
                 <span />
